@@ -3,6 +3,11 @@ const { Sequelize, DataTypes } = require("sequelize");
 const query = dbMysql.getQueryInterface();
 
 exports.tableWa_token = query.createTable('wa_token', {
+    id: {
+        type: DataTypes.INTEGER,
+        primaryKey: true,
+        autoIncrement: true
+    },
     name: {
         type: DataTypes.STRING,
         allowNull: false,
@@ -11,12 +16,10 @@ exports.tableWa_token = query.createTable('wa_token', {
     description: {
         type: DataTypes.STRING,
         allowNull: false,
-        unique: false
     },
     session: {
-        type: DataTypes.JSON,
+        type: DataTypes.TEXT('long'),
         allowNull: false,
-        unique: true
     }
 });
 
