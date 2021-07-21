@@ -26,18 +26,18 @@ exports.refresh = async () => {
         console.error(error);
     }
 
-    // function sendRefresh(name) {
-    //     axios({
-    //         method: 'POST',
-    //         url: `${process.env.BASE_URL}:${process.env.PORT}/whatsapp/create`,
-    //         data: {
-    //             name: name
-    //         }
-    //     }).then(response => {
-    //     }).catch((error) => {
-    //         console.error(error.code);
-    //     })
-    // }
+    function sendRefresh(name) {
+        axios({
+            method: 'POST',
+            url: `${process.env.BASE_URL}:${process.env.PORT}/whatsapp/create`,
+            data: {
+                name: name
+            }
+        }).then(response => {
+        }).catch((error) => {
+            console.error(error.code);
+        })
+    }
 }
 
 exports.build = async (req, res) => {
