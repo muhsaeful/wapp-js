@@ -1,33 +1,32 @@
 const { Sequelize, DataTypes } = require("sequelize");
 const dbMysql = require("../database/sequelize_config");
 
-const device = dbMysql.define('device', {
-    device_id: {
+const user = dbMysql.define('user', {
+    user_id: {
         type: DataTypes.STRING(40),
         allowNull: false,
         unique: true,
         primaryKey: true,
     },
-    user_id: {
+    username: {
         type: DataTypes.STRING(40),
         allowNull: false,
+        unique: true,
     },
-    device_phone: {
-        type: DataTypes.STRING(20),
-        allowNull: true,
-    },
-    description: {
+    password: {
         type: DataTypes.STRING(128),
         allowNull: true,
+        unique: true,
     },
-    session: {
-        type: DataTypes.JSON,
-        allowNull: false,
+    email: {
+        type: DataTypes.STRING(40),
+        allowNull: true,
+        unique: true,
     }
 }, {
     freezeTableName: true,
     timestamps: false
 });
 
-device.removeAttribute('id');
-module.exports = device;
+user.removeAttribute('id');
+module.exports = user;

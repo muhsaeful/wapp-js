@@ -1,9 +1,4 @@
-exports.auth = (req, res, next) => {
+// 1. validasi JWT
+// 2. validasi inputan
 
-    var bearerToken = "AwIosa2ask8UJa";
-    var authentication = req.headers.authentication;
-    if (authentication !== bearerToken) {
-        return res.send('auhentication failed');
-    }
-    return next();
-}
+exports.authJWT
