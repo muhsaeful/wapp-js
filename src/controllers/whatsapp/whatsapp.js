@@ -12,7 +12,7 @@ const helpers = require("../../helpers/_index_helpers");
 // models
 const model = require("../../models/_index_models");
 
-const sessionToken = [];
+let sessionToken = [];
 
 exports.sessionToken = (device) => {
     const session = sessionToken.find(devices => devices.device_id === device);
@@ -60,7 +60,20 @@ exports.build = async (req, res) => {
 
             //jika ada session sessuai request isi variabel sessionData jalankan function createSession
             sessionData = JSON.parse(checkSession.session);
-            await createSession(device_id, user_id, description, sessionData);
+
+            // cek apkah client aktif atau ada di varibel sessionToken
+            let sessionArray = sessionToken.find(arr => arr.device_id === device_id);
+            if (sessionArray === undefined) {
+                await createSession(device_id, user_id, description, sessionData);
+            } else {
+                let sesssionIndex = sessionToken.indexOf(sessionArray);
+                // let client = sessionArray.session;
+                // client.destroy()
+                return res.status(200).json({
+                    status: false,
+                    response: `client ${device_id} is ready!`,
+                });
+            }
         };
 
     } else {
@@ -81,7 +94,7 @@ exports.build = async (req, res) => {
         const client = await new Client({
             session: sessionData,
             puppeteer: {
-                headless: true,
+                headless: false,
                 args: [
                     '--no-sandbox',
                     '--disable-setuid-sandbox',

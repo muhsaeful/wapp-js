@@ -1,6 +1,6 @@
 {
   "name": "wapp",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Membuat rest api mengunakan whatsapp-web.js",
   "main": "app.js",
   "dependencies": {
@@ -33,5 +33,8 @@
   "bugs": {
     "url": "https://github.com/muhsaeful/wapp-js/issues"
   },
-  "homepage": "https://github.com/muhsaeful/wapp-js#readme"
+  "homepage": "https://github.com/muhsaeful/wapp-js#readme",
+  "directories": {
+    "example": "example"
+  }
 }

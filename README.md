@@ -1,9 +1,9 @@
 # wapp-js
 
 Starter
-- Clone repository
+- clone repository
 - npm install
 - npm run build:env
-- Connect database
+- connect database
 - npm run build:table
 - npm run start
