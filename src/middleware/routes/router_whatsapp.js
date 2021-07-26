@@ -3,14 +3,11 @@ const whatsapp = express.Router();
 const { auth } = require("../authentication/auth_whatsapp");
 
 // controller
-const {
-    build,
-    sendtext,
-    sendmedia
-} = require("../../controllers/whatsapp");
+const controller = require("../../controllers/_index_controllers");
 
-whatsapp.post('/create', build);
-whatsapp.post('/sendtext', sendtext);
-whatsapp.post('/sendmedia', sendmedia);
+whatsapp.get('/qrcode/:name', controller.qrcode.qrcode)
+whatsapp.post('/create', controller.whatsapp.build);
+whatsapp.post('/sendtext', controller.send_message.sendtext);
+whatsapp.post('/sendmedia', controller.send_message.sendmedia);
 
 module.exports = whatsapp;
