@@ -1,10 +1,7 @@
-const JWT = require("jsonwebtoken");
-const fs = require("fs");
 const validator = require("validator");
 const model = require("../../models/_index_models");
-const { check, body, validationResult } = require("express-validator");
 
-exports.signJWT = async (req, res) => {
+exports.login = async (req, res, next) => {
 
     /** inputan
      * body = username,password
@@ -51,22 +48,9 @@ exports.signJWT = async (req, res) => {
 
         // 2. hash password
 
-        // generate JWT
-        let payload = {
-            user_id: user.dataValues.user_id
-        };
-
-        let privatKey = await fs.readFileSync("./src/key/jwt.key", "utf8");
-
-        let createJWT = JWT.sign(payload, privatKey, {
-            expiresIn: 60 * 60,
-            algorithm: "HS256"
-        });
-
-        res.status(200).json({
-            status: true,
-            response: createJWT,
-        });
+        //next generate JWT
+        res.locals.user_id = user.dataValues.user_id
+        return next();
 
     } catch (error) {
         console.error(error);

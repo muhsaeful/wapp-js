@@ -1,3 +1,3 @@
 exports.message = (msg) => {
-    // console.log(msg);
+    console.log(msg);
 }

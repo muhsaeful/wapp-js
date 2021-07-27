@@ -1,6 +1,8 @@
-const express = require("express")
-const user = express.Router()
-const auth = require("../authentication/auth_user");
+const express = require("express");
+const user = express.Router();
+
+// authentication
+const authe = require('../authentication/_index_authentication');
 
 //1. login
 //2. register
@@ -12,6 +14,9 @@ const auth = require("../authentication/auth_user");
  * refresh (endpoint untuk resend verify code)
 */
 
-user.post("/login", auth.signJWT);
+user.post("/login",
+    authe.user.login,
+    authe.jwt.sign
+);
 
 module.exports = user;

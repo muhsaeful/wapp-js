@@ -26,10 +26,13 @@ exports.sessionToken = (device) => {
 exports.build = async (req, res) => {
 
     let description = req.body.description;
+    let stringJWT = res.locals.stringJWT;
+
 
     //  1. device_id akan di generate dengan uuid v4
     //  2. user_id akan di dapat dari jwt nantinya (sekarang masih di buat static)
-    let user_id = "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d";
+
+    let user_id = stringJWT.user_id;
     let device_id = (req.body.device !== undefined) ? req.body.device : null;
 
     let sessionData; //inisiasi sessionData
@@ -248,32 +251,3 @@ exports.build = async (req, res) => {
         });
     };
 };
-
-// exports.refresh = async () => {
-//     try {
-//         await model.wa_token.findAll({ attributes: ['name'] }).then((response) => {
-//             if (response.length > 0) {
-//                 var data = JSON.stringify(response);
-//                 var data = JSON.parse(data);
-//                 data.forEach(e => {
-//                     sendRefresh(e.name);
-//                 });
-//             }
-//         });
-//     } catch (error) {
-//         console.error(error);
-//     }
-
-//     function sendRefresh(name) {
-//         axios({
-//             method: 'POST',
-//             url: `${process.env.BASE_URL}:${process.env.PORT}/whatsapp/create`,
-//             data: {
-//                 name: name
-//             }
-//         }).then(response => {
-//         }).catch((error) => {
-//             console.error(error.code);
-//         })
-//     }
-// }
