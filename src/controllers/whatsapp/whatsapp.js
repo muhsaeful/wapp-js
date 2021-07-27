@@ -33,41 +33,21 @@ exports.build = async (req, res) => {
     //  2. user_id akan di dapat dari jwt nantinya (sekarang masih di buat static)
 
     let user_id = stringJWT.user_id;
-    let device_id = (req.body.device !== undefined) ? req.body.device : null;
+    let device_id = req.body.device;
 
     let sessionData; //inisiasi sessionData
 
-    if (device_id !== null) { //jika req.body.device(opsional) terdapat input
-
-        // cek session di database sesuai device_id dari request
-        let checkSession = await model.device.findOne({ where: { device_id: device_id } }).then(device => {
-            return device;
-        }).catch(err => { console.log(err); return 'error' });
-
-        if (checkSession === 'error') {
-
-            //error
-            return res.status(500).json({
-                status: false,
-                response: 'error'
-            });
-
-        } else if (checkSession === null) {
-
-            //tidak ada session sesuai request
-            return res.status(200).json({
-                status: false,
-                response: `client ${device_id} is not found!`,
-            });
-        } else if (checkSession !== null) {
-
-            //jika ada session sessuai request isi variabel sessionData jalankan function createSession
-            sessionData = JSON.parse(checkSession.session);
+    try {
+        if (device_id === undefined) {
+            await createSession(uuidv4(), user_id, description, sessionData); // buat device baru
+        } else if (device_id !== undefined) {
+            sessionData = JSON.parse(res.locals.stringDevice.session);
 
             // cek apkah client aktif atau ada di varibel sessionToken
             let sessionArray = sessionToken.find(arr => arr.device_id === device_id);
             if (sessionArray === undefined) {
-                await createSession(device_id, user_id, description, sessionData);
+
+                await createSession(device_id, user_id, description, sessionData); // refresh device sesuai session
             } else {
                 let sesssionIndex = sessionToken.indexOf(sessionArray);
                 // let client = sessionArray.session;
@@ -77,14 +57,14 @@ exports.build = async (req, res) => {
                     response: `client ${device_id} is ready!`,
                 });
             }
-        };
-
-    } else {
-
-        //jalankan function createSession dengan uuidv4 generate dan sessionData kosong
-        await createSession(uuidv4(), user_id, description, sessionData);
-    }
-
+        }
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            status: false,
+            response: {}
+        })
+    };
 
     // function createSession
     async function createSession(device, user, description, session) {
@@ -93,98 +73,93 @@ exports.build = async (req, res) => {
         if (sessionInput !== undefined) {
             sessionData = sessionInput;
         }
-        // create client
-        const client = await new Client({
-            session: sessionData,
-            puppeteer: {
-                headless: false,
-                args: [
-                    '--no-sandbox',
-                    '--disable-setuid-sandbox',
-                    '--disable-dev-shm-usage',
-                    '--disable-accelerated-2d-canvas',
-                    '--no-first-run',
-                    '--no-zygote',
-                    '--single-process', // <- this one doesn't works in Windows
-                    '--disable-gpu'
-                ],
-            },
-            authTimeoutMs: 10000,
-            // qrRefreshIntervalMs: 60000,
-            // qrTimeoutMs: 60000,
-            restartOnAuthFail: true,
-            userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-        });
 
-        client.initialize();
+        try {
 
-        // Proses mendapatkan QR Code
-        var qrNum = 0;
-        await client.on('qr', (qr) => {
+            // create client
+            const client = await new Client({
+                session: sessionData,
+                puppeteer: {
+                    headless: false,
+                    args: [
+                        '--no-sandbox',
+                        '--disable-setuid-sandbox',
+                        '--disable-dev-shm-usage',
+                        '--disable-accelerated-2d-canvas',
+                        '--no-first-run',
+                        '--no-zygote',
+                        '--single-process', // <- this one doesn't works in Windows
+                        '--disable-gpu'
+                    ],
+                },
+                authTimeoutMs: 10000,
+                // qrRefreshIntervalMs: 60000,
+                // qrTimeoutMs: 60000,
+                restartOnAuthFail: true,
+                userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+            });
 
-            // Generate and scan this code with your phone
-            var qrLast;
-            qrLast = qrNum++;
+            client.initialize();
 
-            console.log(`QR ${device} RECEIVED`, qr);
-            console.log(`${qrLast} - ${helpers.moment.date()}`);
+            // Proses mendapatkan QR Code
+            var qrNum = 0;
+            await client.on('qr', (qr) => {
 
-            function qrcodeSave(qr) {
-                qrCode.toDataURL(qr, (err, url) => {
-                    let base64 = url.replace('data:image/png;base64,', '');
-                    let binary = new Buffer.from(base64, 'base64').toString('binary');
+                // Generate and scan this code with your phone
+                var qrLast;
+                qrLast = qrNum++;
 
-                    // simpan qrcode
-                    fs.writeFileSync(`./src/public/img/${device}.png`, binary, 'binary', error => {
-                        console.error(error);
+                console.log(`QR ${device} RECEIVED`, qr);
+                console.log(`${qrLast} - ${helpers.moment.date()}`);
+
+                function qrcodeSave(qr) {
+                    qrCode.toDataURL(qr, (err, url) => {
+                        let base64 = url.replace('data:image/png;base64,', '');
+                        let binary = new Buffer.from(base64, 'base64').toString('binary');
+
+                        // simpan qrcode
+                        fs.writeFileSync(`./src/public/img/${device}.png`, binary, 'binary');
                     });
-                });
-            }
+                }
 
-            if (qrLast == 0) {
+                if (qrLast == 0) {
 
-                qrcodeSave(qr);
+                    qrcodeSave(qr);
 
-                res.status(200).json({
-                    status: true,
-                    response: {
-                        device: device,
-                        qrcode: `${process.env.BASE_URL}/whatsapp/qrcode/${device}`
-                    }
-                });
-            } else if (qrLast <= 4) {
-                // ganti qrcode sebelumnya
-                qrcodeSave(qr);
-                // qrTerminal.generate(qr, { small: true });
+                    res.status(200).json({
+                        status: true,
+                        response: {
+                            device: device,
+                            qrcode: `${process.env.BASE_URL}/whatsapp/qrcode/${device}`
+                        }
+                    });
+                } else if (qrLast <= 4) {
+                    // ganti qrcode sebelumnya
+                    qrcodeSave(qr);
+                    // qrTerminal.generate(qr, { small: true });
 
-            } else if (qrLast == 5) {
+                } else if (qrLast == 5) {
 
-                // hapus qrcode
-                fs.unlinkSync(`./src/public/img/${device}.png`, error => {
-                    console.error(error);
-                })
+                    // hapus qrcode
+                    fs.unlinkSync(`./src/public/img/${device}.png`)
 
-                client.destroy();
-            }
-        });
+                    client.destroy();
+                }
+            });
 
-        // Cek session whatsapp
-        await client.on("authenticated", async (session) => {
-            console.log({ "AUTHENTICATED": session });
+            // Cek session whatsapp
+            await client.on("authenticated", async (session) => {
+                console.log({ "AUTHENTICATED": session });
 
-            sessionData = session;
+                sessionData = session;
 
-            if (sessionInput !== undefined) {
+                if (sessionInput !== undefined) {
+                    // await model.device.update({ updatedAt }, { where: { device_id: device } });
 
-                // await model.device.update({ updatedAt }, { where: { device_id: device } });
+                } else {
+                    // hapus qrcode
+                    fs.unlinkSync(`./src/public/img/${device}.png`)
 
-            } else {
-                // hapus qrcode
-                fs.unlinkSync(`./src/public/img/${device}.png`, error => {
-                    console.error(error);
-                });
-
-                try {
                     await model.device.create({
                         device_id: device,
                         user_id: user,
@@ -192,62 +167,62 @@ exports.build = async (req, res) => {
                         description: '',
                         session: session
                     });
-                } catch (err) {
-                    console.error(err);
                 }
-            }
-        });
-
-        await client.on("auth_failure", async (e) => {
-            // Hapus session
-            // await destroyByName(name);
-
-            await console.log(`Client ${device} Sesi pada mobile apps di hapus atau tidak terhubung ke internet`);
-            await client.destroy();
-        });
-
-        // Jika whatsapp web di hapus dari aplikasi
-        await client.on("disconnected", async (e) => {
-
-            await console.log(`Client ${device} is Disconnect!`);
-
-            // send callback
-
-            // delete session
-            await model.device.destroy({ where: { device_id: device } }, (err) => {
-                if (err) console.error(err);
-                console.log(`Client ${device} is  Deleted!`);
             });
-            await client.destroy();
-        })
 
-        // Jika whatsapp ready
-        await client.on('ready', () => {
-            console.log(`Client ${device} is ready!`);
-            // let clientInfo = Object.values(client)[6];
-            // console.log(Object.values(clientInfo)[2].user);
+            await client.on("auth_failure", async (e) => {
+                // Hapus session
+                // await destroyByName(name);
 
-            // send callback
+                await console.log(`Client ${device} Sesi pada mobile apps di hapus atau tidak terhubung ke internet`);
+                await client.destroy();
+            });
 
-            if (sessionInput !== undefined) {
-                res.status(200).json({
-                    status: true,
-                    response: `client ${device} is ready!`
-                });
-            };
-        });
+            // Jika whatsapp web di hapus dari aplikasi
+            await client.on("disconnected", async (e) => {
 
-        // Pesan masuk
-        await client.on('message', msg => {
-            message(msg)
-        });
+                await console.log(`Client ${device} is Disconnect!`);
 
-        sessionToken.push({
-            user_id: user,
-            device_id: device,
-            device_phone: '',
-            description: description,
-            session: client
-        });
+                // send callback
+
+                // delete session
+                await model.device.destroy({ where: { device_id: device } });
+                await client.destroy();
+            })
+
+            // Jika whatsapp ready
+            await client.on('ready', () => {
+                console.log(`Client ${device} is ready!`);
+                // let clientInfo = Object.values(client)[6];
+                // console.log(Object.values(clientInfo)[2].user);
+
+                // send callback
+                if (sessionInput !== undefined) {
+                    res.status(200).json({
+                        status: true,
+                        response: `client ${device} is ready!`
+                    });
+                };
+            });
+
+            // Pesan masuk
+            await client.on('message', msg => {
+                message(msg)
+            });
+
+            sessionToken.push({
+                user_id: user,
+                device_id: device,
+                device_phone: '',
+                description: description,
+                session: client
+            });
+        } catch (error) {
+            console.error(error);
+            res.status(500).json({
+                status: false,
+                response: {}
+            })
+        }
     };
 };
