@@ -15,6 +15,7 @@ const authe = require('../authentication/_index_authentication');
 */
 
 user.post("/login",
+    authe.input.loginInput,
     authe.user.login,
     authe.jwt.sign
 );

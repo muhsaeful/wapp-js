@@ -14,13 +14,24 @@ const autho = require('../authorization/_index_authorization');
 // router
 whatsapp.get('/qrcode/:name', controller.qrcode.qrcode);
 whatsapp.post('/create',
-    authe.whatsapp.createInput,
     authe.jwt.verify,
-    autho.whatsapp.createLimit,
+    authe.input.createInput,
+    authe.whatsapp.createLimit,
+    autho.whatsapp.accessDevice,
     controller.whatsapp.build
 );
 
-whatsapp.post('/sendtext', controller.send_message.sendtext);
-whatsapp.post('/sendmedia', controller.send_message.sendmedia);
+whatsapp.post('/sendtext',
+    authe.jwt.verify,
+    authe.input.sendtextInput,
+    autho.whatsapp.accessDevice,
+    controller.send_message.sendtext
+);
+
+whatsapp.post('/sendmedia',
+    authe.jwt.verify,
+    authe.input.sendmediaInput,
+    autho.whatsapp.accessDevice,
+    controller.send_message.sendmedia);
 
 module.exports = whatsapp;

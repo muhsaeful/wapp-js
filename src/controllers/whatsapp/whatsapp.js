@@ -1,8 +1,8 @@
-const { Client, MessageMedia, ClientInfo } = require('whatsapp-web.js');
+const { Client } = require('whatsapp-web.js');
 const { v4: uuidv4 } = require("uuid");
-const qrTerminal = require("qrcode-terminal");
+// const qrTerminal = require("qrcode-terminal");
 const qrCode = require("qrcode");
-const axios = require('axios');
+// const axios = require('axios');
 const fs = require("fs");
 const { message } = require('./accept_message');
 
@@ -11,6 +11,7 @@ const helpers = require("../../helpers/_index_helpers");
 
 // models
 const model = require("../../models/_index_models");
+const imgPath = "./src/public/img/qrcode";
 
 let sessionToken = [];
 
@@ -39,7 +40,9 @@ exports.build = async (req, res) => {
 
     try {
         if (device_id === undefined) {
+
             await createSession(uuidv4(), user_id, description, sessionData); // buat device baru
+
         } else if (device_id !== undefined) {
             sessionData = JSON.parse(res.locals.stringDevice.session);
 
@@ -75,9 +78,8 @@ exports.build = async (req, res) => {
         }
 
         try {
-
             // create client
-            const client = await new Client({
+            const client = new Client({
                 session: sessionData,
                 puppeteer: {
                     headless: false,
@@ -88,7 +90,7 @@ exports.build = async (req, res) => {
                         '--disable-accelerated-2d-canvas',
                         '--no-first-run',
                         '--no-zygote',
-                        '--single-process', // <- this one doesn't works in Windows
+                        // '--single-process', // <- this one doesn't works in Windows
                         '--disable-gpu'
                     ],
                 },
@@ -99,13 +101,12 @@ exports.build = async (req, res) => {
                 userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
             });
 
-            client.initialize();
+            client.initialize(); // not running with await
 
             // Proses mendapatkan QR Code
             var qrNum = 0;
             await client.on('qr', (qr) => {
 
-                // Generate and scan this code with your phone
                 var qrLast;
                 qrLast = qrNum++;
 
@@ -118,14 +119,12 @@ exports.build = async (req, res) => {
                         let binary = new Buffer.from(base64, 'base64').toString('binary');
 
                         // simpan qrcode
-                        fs.writeFileSync(`./src/public/img/${device}.png`, binary, 'binary');
+                        fs.writeFileSync(`${imgPath}/${device}.png`, binary, 'binary');
                     });
-                }
+                };
 
                 if (qrLast == 0) {
-
                     qrcodeSave(qr);
-
                     res.status(200).json({
                         status: true,
                         response: {
@@ -134,17 +133,11 @@ exports.build = async (req, res) => {
                         }
                     });
                 } else if (qrLast <= 4) {
-                    // ganti qrcode sebelumnya
                     qrcodeSave(qr);
-                    // qrTerminal.generate(qr, { small: true });
-
                 } else if (qrLast == 5) {
-
-                    // hapus qrcode
-                    fs.unlinkSync(`./src/public/img/${device}.png`)
-
+                    fs.unlinkSync(`${imgPath}/${device}.png`);
                     client.destroy();
-                }
+                };
             });
 
             // Cek session whatsapp
@@ -152,13 +145,12 @@ exports.build = async (req, res) => {
                 console.log({ "AUTHENTICATED": session });
 
                 sessionData = session;
-
                 if (sessionInput !== undefined) {
                     // await model.device.update({ updatedAt }, { where: { device_id: device } });
 
                 } else {
                     // hapus qrcode
-                    fs.unlinkSync(`./src/public/img/${device}.png`)
+                    fs.unlinkSync(`${imgPath}/${device}.png`)
 
                     await model.device.create({
                         device_id: device,
@@ -170,24 +162,20 @@ exports.build = async (req, res) => {
                 }
             });
 
-            await client.on("auth_failure", async (e) => {
-                // Hapus session
-                // await destroyByName(name);
-
-                await console.log(`Client ${device} Sesi pada mobile apps di hapus atau tidak terhubung ke internet`);
-                await client.destroy();
+            await client.on("auth_failure", (e) => {
+                // destroy session
+                console.log(`Client ${device} Sesi pada mobile apps di hapus atau tidak terhubung ke internet`);
+                client.destroy();
             });
 
             // Jika whatsapp web di hapus dari aplikasi
             await client.on("disconnected", async (e) => {
-
-                await console.log(`Client ${device} is Disconnect!`);
-
+                console.log(`Client ${device} is Disconnect!`);
                 // send callback
 
                 // delete session
                 await model.device.destroy({ where: { device_id: device } });
-                await client.destroy();
+                client.destroy();
             })
 
             // Jika whatsapp ready
@@ -217,6 +205,7 @@ exports.build = async (req, res) => {
                 description: description,
                 session: client
             });
+
         } catch (error) {
             console.error(error);
             res.status(500).json({

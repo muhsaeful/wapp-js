@@ -1,33 +1,38 @@
-const validator = require("validator");
-const { body, validationResult, check, header } = require("express-validator");
+// model
+const model = require("../../models/_index_models");
 
-let createInput = createInput => {
-
+exports.createLimit = async (req, res, next) => {
     /**
-     * 1. validasi input
+     * 1. validasi limit device
      */
 
-    return async (req, res, next) => {
+    try {
+        let device = req.body.device;
+        let user_id = res.locals.stringJWT.user_id;
+        let countDevice = await model.device.count({ where: { user_id: user_id } });
 
-        // validasi input
-        await Promise.all(createInput.map(create => create.run(req)));
-        const errors = validationResult(req).formatWith(({ msg }) => {
-            return msg;
-        });
-
-        if (!errors.isEmpty()) {
-            return res.status(401).json({
-                status: false,
-                response: errors.mapped()
-            })
+        /**
+         * 1. membuat device baru
+         * 2. cek limit device untuk user_id
+         */
+        if (device == undefined) {
+            if (countDevice >= 1) {
+                return res.status(403).json({
+                    status: false,
+                    response: 'user limit create device'
+                });
+            } else {
+                return next();
+            }
         } else {
             return next();
         }
-    }
-};
 
-exports.createInput = createInput([
-    header('authentication').notEmpty().isString(),
-    body('device').optional().isUUID(),
-    body('description').optional().isString()
-]);
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({
+            status: false,
+            response: {}
+        });
+    }
+}

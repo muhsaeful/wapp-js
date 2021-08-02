@@ -1,5 +1,4 @@
 const express = require("express");
-// const { refresh } = require("./src/controllers/whatsapp");
 
 // Routing
 const whatsapp = require("./src/middleware/routes/router_whatsapp");
@@ -17,5 +16,4 @@ app.use('/user', user);
 
 app.listen(port, async function () {
     console.log(`app running on port ${port}`);
-    // await refresh();
 });
