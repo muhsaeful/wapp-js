@@ -1,5 +1,5 @@
 node_modules
 .env
 example
-src/public/img/qrcode/*
-src/key/*
+src/public/img/qrcode/**
+src/key/**
